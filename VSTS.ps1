@@ -23,7 +23,7 @@ BEGIN {
     }
     function Write-Warn {
         param([Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)][AllowEmptyString()][string]$Message)
-        Write-warning ("INFO:    [{0:s}] {1}`r" -f (get-date), $Message)
+        Write-warning ("[{0:s}] {1}`r" -f (get-date), $Message)
     }
     function Write-Success {
         param([Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)][AllowEmptyString()][string]$Message)
@@ -282,14 +282,15 @@ $defaulttemplate = @"
         
         function Invoke-cmd($uri)
         {
-            write-host "URI: $uri"
+            
+            write-success "    URI: $uri"
             $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $global:user,$global:token)))
             $ret = Invoke-RestMethod -Uri $uri -Method Get -ContentType "application/json" -Headers @{Authorization=("Basic {0}" -f $base64AuthInfo)}
             return $ret
         }
         function Get-Build($buildId)
         {
-            write-info "Getting Build Info for Build: $buildId"
+            #write-info "Getting Build Info for Build: $buildId"
             $uri = ('{0}/{1}/_apis/build/builds/{2}/?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
             $ret = Invoke-cmd($uri)
             if (!($ret.value))
@@ -322,7 +323,7 @@ $defaulttemplate = @"
             }
             else
             {
-                write-log "    There are no Builds associated with buildId=$buildId"
+                write-warn "    There are no Builds associated with buildId=$buildId"
             }
             return $csList
         }
@@ -353,7 +354,7 @@ $defaulttemplate = @"
             }
             else
             {
-                write-log "    There are no Work Items associated with buildId=$buildId"
+                write-warn "    There are no Work Items associated with buildId=$buildId"
             }
             return $wiList
         }
@@ -363,8 +364,8 @@ $defaulttemplate = @"
             write-log "Getting build details for buildId [$buildId]"    
             $build = Get-Build($buildId)
 
-            Write-log "Getting associated work items for build [$($buildId)]"
-            Write-log "Getting associated changesets/commits for build [$($buildId)]"
+            #Write-log "Getting associated work items for build [$($buildId)]"
+            #Write-log "Getting associated changesets/commits for build [$($buildId)]"
 
             $build = @{'build'=$build;
                         'workitems'=(Get-BuildWorkItems($buildId));
