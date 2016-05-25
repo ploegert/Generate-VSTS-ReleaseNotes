@@ -264,7 +264,7 @@ public enum Mode
 $defaulttemplate = @"
 #Release notes for build `$defname  
 **Build Number**  : `$(`$build.buildId)    
-**Build completed** `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`$build.finishTime)     
+**Build completed** `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`(Get-Date))     
 **Source Branch** `$(`$build.sourceBranch)  
 
 ###Associated work items  
@@ -392,6 +392,7 @@ PROCESS{
     #Write Output
     write-Info "Writing output file [$output]."
     Set-Content $output $outputmarkdown
+    get-content $output | out-string
 }
 
 END {}
