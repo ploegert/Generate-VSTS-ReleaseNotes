@@ -292,7 +292,7 @@ $defaulttemplate = @"
         {
             write-info "Getting Build Info for Build: $buildId"
             #$uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/?api-version=2.0"
-            $uri = ('{0}.visualstudio.com/{1}/_apis/build/builds/{2}/?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
+            $uri = ('{0}/{1}/_apis/build/builds/{2}/?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
             $ret = Invoke-cmd($uri)
             if (!($ret.value))
             {
@@ -304,7 +304,7 @@ $defaulttemplate = @"
         {
             write-info "Getting Build ChangeSets for Build: $buildId"
             #$uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/changes?api-version=2.0"
-            $uri = ('{0}.visualstudio.com/{1}/_apis/build/builds/{2}/changes?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
+            $uri = ('{0}/{1}/_apis/build/builds/{2}/changes?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
             $ret = Invoke-cmd($uri)
             $csList = @();
             if ($ret.value)
@@ -333,7 +333,7 @@ $defaulttemplate = @"
         {
             write-info "Getting Work items for Build: $buildId"
             #$uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/workitems?api-version=2.0"
-            $uri = ('{0}.visualstudio.com/{1}/_apis/build/builds/{2}/workitems?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
+            $uri = ('{0}/{1}/_apis/build/builds/{2}/workitems?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
             $ret = Invoke-cmd($uri)
             $wiList = @();
             if ($ret.value)
