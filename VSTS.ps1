@@ -282,6 +282,7 @@ $defaulttemplate = @"
         
         function Invoke-cmd($uri)
         {
+            write-host "URI: $uri"
             $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $global:user,$global:token)))
             $ret = Invoke-RestMethod -Uri $uri -Method Get -ContentType "application/json" -Headers @{Authorization=("Basic {0}" -f $base64AuthInfo)}
             return $ret
