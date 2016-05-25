@@ -254,15 +254,14 @@ public enum Mode
 }
 
 
-    Class VSTS {
 
-        [string] $tfsUri
-        [string] $teamproject
-        [string] $buildId
-        [string] $user = "ReleaseNotesGenerator"
-        [string] $token
+[string] $global:collectionUrl = $collectionUrl
+[string] $global:teamproject = $teamproject
+[string] $global:buildId = $buildId
+[string] $global:user = "ReleaseNotesGenerator"
+[string] $global:token = $vstsToken
 
-        $defaulttemplate = @"
+$defaulttemplate = @"
 #Release notes for build `$defname  
 **Build Number**  : `$(`$build.buildId)    
 **Build completed** `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`$build.finishTime)     
@@ -279,44 +278,30 @@ public enum Mode
 @@CSLOOP@@  
 "@
         
-        VSTS() { }
-        VSTS($tfsUri,$teamproject,$buildId,$token) {
-            $this.tfsUri =  $tfsUri
-            $this.teamproject = $teamproject
-            $this.buildId = $buildId 
-            $this.token =  $token
-            
-            #$this.GetBuildDataSet($buildId)
-        }
-        VSTS($tfsUri,$teamproject,$token) {
-            $this.tfsUri =  $tfsUri
-            $this.teamproject = $teamproject
-            $this.token =  $token
-        }
+
         
-        
-        [object]Invoke($uri)
+        function Invoke-cmd($uri)
         {
-            $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $this.user,$this.token)))
+            $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $global:user,$global:token)))
             $ret = Invoke-RestMethod -Uri $uri -Method Get -ContentType "application/json" -Headers @{Authorization=("Basic {0}" -f $base64AuthInfo)}
             return $ret
         }
-        [object]GetBuild($buildId)
+        function Get-Build($buildId)
         {
             write-info "Getting Build Info for Build: $buildId"
-            $uri = "https://$($this.tfsUri).visualstudio.com/$($this.teamproject)/_apis/build/builds/$buildId/?api-version=2.0"
-            $ret = $this.invoke($uri)
+            $uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/?api-version=2.0"
+            $ret = Invoke-cmd($uri)
             if (!($ret.value))
             {
                 write-warn "    There are no Builds associated with buildId=$buildId"
             }
             return $ret
         }
-        [object]GetBuildChangeSets($buildId)
+        function Get-BuildChangeSets($buildId)
         {
             write-info "Getting Build ChangeSets for Build: $buildId"
-            $uri = "https://$($this.tfsUri).visualstudio.com/$($this.teamproject)/_apis/build/builds/$buildId/changes?api-version=2.0"
-            $ret = $this.invoke($uri)
+            $uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/changes?api-version=2.0"
+            $ret = Invoke-cmd($uri)
             $csList = @();
             if ($ret.value)
             {
@@ -324,7 +309,7 @@ public enum Mode
                 {
                     # we can get more detail if the changeset is on VSTS or TFS
                     try {
-                        $csList += $this.invoke($cs.location)
+                        $csList += Invoke-cmd($cs.location)
                     } catch
                     {
                         Write-warning "Unable to get details of changeset/commit as it is not stored in TFS/VSTS"
@@ -340,11 +325,11 @@ public enum Mode
             }
             return $csList
         }
-        [object]GetBuildWorkItems($buildId)
+        Function Get-BuildWorkItems($buildId)
         {
             write-info "Getting Work items for Build: $buildId"
-            $uri = "https://$($this.tfsUri).visualstudio.com/$($this.teamproject)/_apis/build/builds/$($this.buildId)/workitems?api-version=2.0"
-            $ret = $this.invoke($uri)
+            $uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/workitems?api-version=2.0"
+            $ret = Invoke-cmd($uri)
             $wiList = @();
             if ($ret.value)
             {
@@ -352,9 +337,9 @@ public enum Mode
                 {
                     # we can get more detail if the changeset is on VSTS or TFS
                     try {
-                        #[string] $a = $this.invoke($wi.url)
+                        #[string] $a = Invoke-cmd($wi.url)
                         #write-host "Value of A is: $($wi.location)" 
-                        $wiList += $this.invoke($wi.url)
+                        $wiList += Invoke-cmd($wi.url)
                     } catch
                     {
                         Write-warning "Unable to get details of changeset/commit as it is not stored in TFS/VSTS"
@@ -372,22 +357,20 @@ public enum Mode
             return $wiList
         }
         
-        [object]GetBuildDataSet($buildId)
+        function Get-BuildDataSet($buildId)
         {
             write-log "Getting build details for buildId [$buildId]"    
-            $build = $this.GetBuild($buildId)
+            $build = Get-Build($buildId)
 
             Write-log "Getting associated work items for build [$($buildId)]"
             Write-log "Getting associated changesets/commits for build [$($buildId)]"
 
             $build = @{'build'=$build;
-                        'workitems'=($this.GetBuildWorkItems($buildId));
-                        'changesets'=($this.GetBuildChangeSets($buildId))}
+                        'workitems'=(Get-BuildWorkItems($buildId));
+                        'changesets'=(Get-BuildChangeSets($buildId))}
             return $build
         }
-        
-        
-    }
+     
 }
 
 PROCESS{
@@ -397,9 +380,8 @@ PROCESS{
     if (Test-Path $output) { remove-item $output }
 
     #Get API Info
-    $api = [VSTS]::new($collectionUrl,$teamproject,$buildId,$vstsToken)
-    $builds = $api.GetBuildDataSet($buildId)
-    $inlinetemplate = $api.defaulttemplate
+    $builds = Get-BuildDataSet($buildId)
+    $inlinetemplate = $defaulttemplate
 
     #Format Data
     $template = Get-Template -templateLocation $templateLocation -templatefile $templatefile -inlinetemplate $inlinetemplate
