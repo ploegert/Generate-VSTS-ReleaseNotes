@@ -284,14 +284,12 @@ $defaulttemplate = @"
         {
             write-host "URI: $uri"
             $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $global:user,$global:token)))
-            #$ret = Invoke-RestMethod -Uri $uri -Method Get -ContentType "application/json" -Headers @{Authorization=("Basic {0}" -f $base64AuthInfo)}
             $ret = Invoke-RestMethod -Uri $uri -Method Get -ContentType "application/json" -Headers @{Authorization=("Basic {0}" -f $base64AuthInfo)}
             return $ret
         }
         function Get-Build($buildId)
         {
             write-info "Getting Build Info for Build: $buildId"
-            #$uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/?api-version=2.0"
             $uri = ('{0}/{1}/_apis/build/builds/{2}/?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
             $ret = Invoke-cmd($uri)
             if (!($ret.value))
@@ -303,7 +301,6 @@ $defaulttemplate = @"
         function Get-BuildChangeSets($buildId)
         {
             write-info "Getting Build ChangeSets for Build: $buildId"
-            #$uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/changes?api-version=2.0"
             $uri = ('{0}/{1}/_apis/build/builds/{2}/changes?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
             $ret = Invoke-cmd($uri)
             $csList = @();
@@ -332,7 +329,6 @@ $defaulttemplate = @"
         Function Get-BuildWorkItems($buildId)
         {
             write-info "Getting Work items for Build: $buildId"
-            #$uri = "https://$collectionUrl.visualstudio.com/$teamproject/_apis/build/builds/$buildId/workitems?api-version=2.0"
             $uri = ('{0}/{1}/_apis/build/builds/{2}/workitems?api-version=2.0' -f $collectionUrl,$teamproject,$buildId )
             $ret = Invoke-cmd($uri)
             $wiList = @();
