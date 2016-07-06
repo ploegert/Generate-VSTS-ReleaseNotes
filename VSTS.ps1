@@ -4,6 +4,7 @@ Param(
     [Parameter(Mandatory=$true,  Position=2, ValueFromPipeline=$true)] [string] $teamproject,
     [Parameter(Mandatory=$true,  Position=3, ValueFromPipeline=$true)] [string] $vstsToken,
     [Parameter(Mandatory=$false, Position=4, ValueFromPipeline=$true)] [string] $outputfile = "ReleaseNotes-$buildId.md",
+    [Parameter(Mandatory=$false, Position=4, ValueFromPipeline=$true)] [string] $outputjson = "ReleaseNotes-$buildId.json",
     [Parameter(Mandatory=$false, Position=5, ValueFromPipeline=$true)] [string] $outputpath = "."
 )
 
@@ -126,8 +127,8 @@ BEGIN {
                                 Create-StackItem -items @($builditem.changesets) -modeStack $modeStack -mode $mode -index $index
                                 if ($modeStack.Peek().BlockQueue.Count -gt 0)
                                 {
-                                $csdetail = $modeStack.Peek().BlockQueue.Dequeue()   
-                                Write-Verbose "$(Indent-Space -indent $modeStack.Count)Getting first changeset/commit $($csdetail.id)"
+                                    $csdetail = $modeStack.Peek().BlockQueue.Dequeue()   
+                                    Write-Verbose "$(Indent-Space -indent $modeStack.Count)Getting first changeset/commit $($d.id)"
                                 
                                 } else {
                                     $csdetail = $null
@@ -138,10 +139,9 @@ BEGIN {
                                 Create-StackItem -items @($builds) -modeStack $modeStack -mode $mode -index $index
                                 if ($modeStack.Peek().BlockQueue.Count -gt 0)
                                 {
-                                $builditem = $modeStack.Peek().BlockQueue.Dequeue() 
-                                $build = $builditem.build
-                                Write-Verbose "$(Indent-Space -indent $modeStack.Count)Getting first build $($build.id)"
-                            
+                                    $builditem = $modeStack.Peek().BlockQueue.Dequeue() 
+                                    $build = $builditem.build
+                                    Write-Verbose "$(Indent-Space -indent $modeStack.Count)Getting first build $($build.id)"
                                 }  else {
                                     $builditem = $null
                                     $build = $null
@@ -229,7 +229,7 @@ BEGIN {
         # add each item to the queue  
         foreach ($item in @($items))
         {
-        $queue.Enqueue($item)
+            $queue.Enqueue($item)
         }
         Write-Verbose "$(Indent-Space -indent ($modeStack.Count +1))$($queue.Count) items"
         # place it on the stack with the blocks mode and start line index
@@ -262,10 +262,19 @@ public enum Mode
 [string] $global:token = $vstsToken
 
 $defaulttemplate = @"
-#Release notes for build `$defname  
-**Build Number**  : `$(`$build.buildId)    
-**Build completed** `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`(Get-Date))     
-**Source Branch** `$(`$build.sourceBranch)  
+#Release notes for build `$(`$build.id) [`$(`$build.buildNumber)]
+
+| Property           | Detail                |
+| ------------------ | -----------           |
+| Build Id           | `$(`$build.id)                  |
+| Build Number       | `$(`$build.buildNumber)            |
+| Build Status       | `$(`$build.status)             |
+| Build Result       | `$(`$build.result)             |
+| Build Requested By | `$(`$builds.build.requestedBy.displayName)            |
+| Build Start Time   | `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`(`$(`$builds.build.startTime)))     |
+| Build Finish Time  | `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`(`$(`$builds.build.finishTime)))     |
+| Report Time        | `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`(Get-Date))     |
+| Source Branch      | `$(`$build.sourceBranch)     |
 
 ###Associated work items  
 @@WILOOP@@  
@@ -274,7 +283,9 @@ $defaulttemplate = @"
 
 ###Associated change sets/commits  
 @@CSLOOP@@  
-* **ID `$(`$csdetail.changesetid)`$(`$csdetail.commitid)** `$(`$csdetail.comment)    
+> **ChangeSet:** `$(`$csdetail.treeId)
+>> **Commit ID:** `$(`$csdetail.commitid) 
+`$(`$csdetail.comment)    
 @@CSLOOP@@  
 "@
         
@@ -363,13 +374,22 @@ $defaulttemplate = @"
         {
             write-log "Getting build details for buildId [$buildId]"    
             $build = Get-Build($buildId)
+            #$build | out-string
+            #break;
 
             #Write-log "Getting associated work items for build [$($buildId)]"
             #Write-log "Getting associated changesets/commits for build [$($buildId)]"
 
-            $build = @{'build'=$build;
+            $build = @{ 'build'=$build;
+                        'id'=($buildId);
+                        'number'=($build.buildNumber);
+                        'status'=($builds.build.status);
+                        'result'=($builds.build.result)
+                        'requestedBy'=($($builds.build.requestedBy.displayName));
                         'workitems'=(Get-BuildWorkItems($buildId));
-                        'changesets'=(Get-BuildChangeSets($buildId))}
+                        'changesets'=(Get-BuildChangeSets($buildId))
+                        
+                    }
             return $build
         }
      
@@ -393,6 +413,11 @@ PROCESS{
     write-Info "Writing output file [$output]."
     Set-Content $output $outputmarkdown
     get-content $output | out-string
+        
+    #write output to json
+    write-Info "Writing output file [$output]."
+    $json = $builds | convertto-Json -Depth 4
+    set-content (join-path $outputpath $outputjson) $json
 }
 
 END {}
