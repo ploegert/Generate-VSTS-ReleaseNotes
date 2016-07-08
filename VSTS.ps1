@@ -272,7 +272,6 @@ $defaulttemplate = @"
 | Build Result       | `$(`$build.result)             |
 | Build Requested By | `$(`$builds.build.requestedBy.displayName)            |
 | Build Start Time   | `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`(`$(`$builds.build.startTime)))     |
-| Build Finish Time  | `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`(`$(`$builds.build.finishTime)))     |
 | Report Time        | `$("{0:dd/MM/yy HH:mm:ss}" -f [datetime]`(Get-Date))     |
 | Source Branch      | `$(`$build.sourceBranch)     |
 
