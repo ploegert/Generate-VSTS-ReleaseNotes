@@ -414,9 +414,9 @@ PROCESS{
     get-content $output | out-string
         
     #write output to json
-    write-Info "Writing output file [$output]."
-    $json = $builds | convertto-Json -Depth 4
-    set-content (join-path $outputpath $outputjson) $json
+    #write-Info "Writing output file [$output]."
+    #$json = $builds | convertto-Json -Depth 4
+    #set-content (join-path $outputpath $outputjson) $json
 }
 
 END {}
